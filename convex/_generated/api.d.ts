@@ -11,6 +11,7 @@
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as routing from "../routing.js";
+import type * as utils_logger from "../utils/logger.js";
 import type * as validations from "../validations.js";
 
 import type {
@@ -23,6 +24,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   routing: typeof routing;
+  "utils/logger": typeof utils_logger;
   validations: typeof validations;
 }>;
 

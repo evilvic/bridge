@@ -5,7 +5,7 @@
         <div class="title">Bridge Console</div>
         <div class="subtitle">PoC: Twilio WhatsApp <-> Intercom</div>
       </div>
-      <div class="env">ENV: POC</div>
+      <div class="env">ENV: {{ appEnv.toUpperCase() }}</div>
     </header>
 
     <main class="grid">
@@ -41,8 +41,11 @@
         <div class="row">
           <div class="label">number_to</div>
           <div class="value monospace">
-            {{ store.routing?.number_to ?? "Not set" }}
+            {{ maskedNumber }}
           </div>
+          <button class="link" @click="toggleNumber">
+            {{ showNumber ? "Hide" : "Show" }}
+          </button>
         </div>
         <div class="row">
           <div class="label">intercom_workspace_id</div>
@@ -97,10 +100,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useAppStore } from "./stores/app";
+import { maskE164 } from "./utils/mask";
 
 const store = useAppStore();
+const showNumber = ref(false);
+const appEnv = import.meta.env.VITE_APP_ENV ?? "dev";
 
 onMounted(() => {
   void store.refresh();
@@ -112,6 +118,16 @@ const statusClass = (status?: string) => {
   if (status === "retrying") return "status warn";
   if (status === "queued") return "status info";
   return "status unknown";
+};
+
+const maskedNumber = computed(() => {
+  const value = store.routing?.number_to ?? "";
+  if (!value) return "Not set";
+  return showNumber.value ? value : maskE164(value);
+});
+
+const toggleNumber = () => {
+  showNumber.value = !showNumber.value;
 };
 </script>
 
@@ -202,6 +218,15 @@ const statusClass = (status?: string) => {
   margin-top: 12px;
   display: flex;
   gap: 8px;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
 }
 
 button {

@@ -1,6 +1,8 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
+import { getEnv, normalizeWhatsAppNumber } from "../shared/normalize";
+import { log } from "./utils/logger";
 
 const http = httpRouter();
 
@@ -22,16 +24,22 @@ http.route({
     });
 
     const routing = await ctx.runQuery(api.routing.getActive, {});
-    const numberTo = normalizeTwilioNumber(form.To ?? "");
+    const numberTo = normalizeWhatsAppNumber(form.To ?? "");
     const workspaceId = routing?.intercom_workspace_id ?? "unknown";
     const messageSid = form.MessageSid;
     const idempotencyKey =
       messageSid ||
-      `${numberTo}:${normalizeTwilioNumber(form.From ?? "")}:${receivedAt}`;
+      `${numberTo}:${normalizeWhatsAppNumber(form.From ?? "")}:${receivedAt}`;
 
     if (!signatureOk) {
+      log({
+        level: "warn",
+        msg: "Twilio signature invalid",
+        env: getEnv(process.env.APP_ENV),
+        integration: "twilio"
+      });
       await ctx.runMutation(api.events.record, {
-        env: "poc",
+        env: getEnv(process.env.APP_ENV),
         workspace_id: workspaceId,
         number_to: numberTo,
         direction: "twilio_to_intercom",
@@ -52,8 +60,14 @@ http.route({
         : routing.enabled
           ? "routing_mismatch"
           : "routing_disabled";
+      log({
+        level: "warn",
+        msg: "Twilio routing invalid",
+        env: getEnv(process.env.APP_ENV),
+        integration: "twilio"
+      });
       await ctx.runMutation(api.events.record, {
-        env: "poc",
+        env: getEnv(process.env.APP_ENV),
         workspace_id: workspaceId,
         number_to: numberTo,
         direction: "twilio_to_intercom",
@@ -69,7 +83,7 @@ http.route({
     }
 
     await ctx.runMutation(api.events.record, {
-      env: "poc",
+      env: getEnv(process.env.APP_ENV),
       workspace_id: workspaceId,
       number_to: numberTo,
       direction: "twilio_to_intercom",
@@ -105,7 +119,7 @@ http.route({
     });
 
     const routing = await ctx.runQuery(api.routing.getActive, {});
-    const numberTo = routing?.number_to ?? "";
+    const numberTo = normalizeWhatsAppNumber(routing?.number_to ?? "");
     const workspaceId =
       routing?.intercom_workspace_id ?? getWorkspaceId(payload) ?? "unknown";
     const conversationId = getConversationId(payload);
@@ -115,8 +129,14 @@ http.route({
     }:${receivedAt}`;
 
     if (!signatureOk) {
+      log({
+        level: "warn",
+        msg: "Intercom signature invalid",
+        env: getEnv(process.env.APP_ENV),
+        integration: "intercom"
+      });
       await ctx.runMutation(api.events.record, {
-        env: "poc",
+        env: getEnv(process.env.APP_ENV),
         workspace_id: workspaceId,
         number_to: numberTo,
         direction: "intercom_to_twilio",
@@ -133,7 +153,7 @@ http.route({
 
     if (topic !== "conversation.admin.replied") {
       await ctx.runMutation(api.events.record, {
-        env: "poc",
+        env: getEnv(process.env.APP_ENV),
         workspace_id: workspaceId,
         number_to: numberTo,
         direction: "intercom_to_twilio",
@@ -149,7 +169,7 @@ http.route({
     }
 
     await ctx.runMutation(api.events.record, {
-      env: "poc",
+      env: getEnv(process.env.APP_ENV),
       workspace_id: workspaceId,
       number_to: numberTo,
       direction: "intercom_to_twilio",
@@ -177,9 +197,6 @@ function parseForm(body: string): Record<string, string> {
   return out;
 }
 
-function normalizeTwilioNumber(value: string): string {
-  return value.replace(/^whatsapp:/, "");
-}
 
 function safeJson(raw: string): Record<string, unknown> {
   try {
