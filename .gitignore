@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+/dist/
+.convex/
+
+.DS_Store
+
+docs/
