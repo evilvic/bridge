@@ -29,3 +29,27 @@ export const list = query({
     return sorted.slice(0, limit ?? 50);
   }
 });
+
+export const updateByIdempotency = mutation({
+  args: {
+    idempotency_key: v.string(),
+    status: v.string(),
+    error_code: v.optional(v.string()),
+    error_detail: v.optional(v.string()),
+    intercom_conversation_id: v.optional(v.string())
+  },
+  handler: async ({ db }, args) => {
+    const existing = await db
+      .query("events")
+      .withIndex("by_idempotency", (q) => q.eq("idempotency_key", args.idempotency_key))
+      .order("desc")
+      .first();
+    if (!existing) return;
+    await db.patch(existing._id, {
+      status: args.status,
+      error_code: args.error_code,
+      error_detail: args.error_detail,
+      intercom_conversation_id: args.intercom_conversation_id
+    });
+  }
+});

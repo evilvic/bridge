@@ -8,8 +8,11 @@
  * @module
  */
 
+import type * as contacts from "../contacts.js";
+import type * as conversations from "../conversations.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
+import type * as idempotency from "../idempotency.js";
 import type * as routing from "../routing.js";
 import type * as utils_logger from "../utils/logger.js";
 import type * as validations from "../validations.js";
@@ -21,8 +24,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  contacts: typeof contacts;
+  conversations: typeof conversations;
   events: typeof events;
   http: typeof http;
+  idempotency: typeof idempotency;
   routing: typeof routing;
   "utils/logger": typeof utils_logger;
   validations: typeof validations;
